@@ -644,10 +644,76 @@ static void mainLoop(void)
             
             int area = 0, biggestMarker = -1;
             
+            // Print some information
+            system("clear");
+            ARLOGe("-- Start marker output (Only valid markers are printed)\n");
+            for (j = 0; j < gARHandle->marker_num; j++) {
+                if (gARHandle->markerInfo[j].id == -1) continue;
+                ARLOGe("Marker Info ID: %d\n", j);
+                ARLOGe("  area     : %d\n",      gARHandle->markerInfo[j].area);
+                ARLOGe("  id       : %d\n",      gARHandle->markerInfo[j].id       );
+                ARLOGe("  idPatt   : %d\n",      gARHandle->markerInfo[j].idPatt   );
+                ARLOGe("  idMatrix : %d\n",      gARHandle->markerInfo[j].idMatrix );
+                ARLOGe("  dir      : %d\n",      gARHandle->markerInfo[j].dir      );
+                ARLOGe("  dirPatt  : %d\n",      gARHandle->markerInfo[j].dirPatt  );
+                ARLOGe("  dirMatrix: %d\n",      gARHandle->markerInfo[j].dirMatrix);
+                ARLOGe("  cf       : %f\n",      gARHandle->markerInfo[j].cf       );
+                ARLOGe("  cfPatt   : %f\n",      gARHandle->markerInfo[j].cfPatt   );
+                ARLOGe("  cfMatrix : %f\n",      gARHandle->markerInfo[j].cfMatrix );
+                ARLOGe("  pos(x,y) : (%f, %f)\n",gARHandle->markerInfo[j].pos[0], gARHandle->markerInfo[j].pos[1] );
+                ARLOGe("  errorCorrected: %d\n", gARHandle->markerInfo[j].errorCorrected);
+                ARLOGe("  globalID: %d\n",       gARHandle->markerInfo[j].globalID);
+                int vid, upperLeftCornerId;
+                for (vid = 0; vid < 4; ++vid) {
+                  if ((4 - gARHandle->markerInfo[j].dir)%4 == vid) { ARLOGe("x"); upperLeftCornerId = vid;}// is upper left corner
+                  else {ARLOGe(" ");}
+                    ARLOGe(" Vertex%d(x,y) : (%f, %f)\n", vid, gARHandle->markerInfo[j].vertex[vid][0], gARHandle->markerInfo[j].vertex[vid][1]);
+                }
+                
+                // Naive orientation in grad (Take the angular between the upper left corner and the center of the marker)
+                double orientation = atan2(gARHandle->markerInfo[j].vertex[upperLeftCornerId][1] - gARHandle->markerInfo[j].pos[1],
+                                           gARHandle->markerInfo[j].vertex[upperLeftCornerId][0] - gARHandle->markerInfo[j].pos[0]) *
+                                           180 / M_PI;
+                ARLOGe("fz_naive: %.2f °\n",orientation - 45 /* Because we sit in a corner*/ + 180 /*backwards compatibility*/);
+
+                static ARdouble   gPatt_width     = 77.0; // Per-marker with in mm
+                static ARdouble   gPatt_trans[3][4];    // Per-marker transformation matrix
+                int err = arGetTransMatSquare(gAR3DHandle, &(gARHandle->markerInfo[j]), gPatt_width, gPatt_trans);
+                ARLOGe("  Transformation-Matrix\n");
+                int idx, idy;
+                for (idy = 0; idy < 3; ++idy) {
+                  ARLOGe("  ");
+                  for (idx = 0; idx < 4; ++idx) {
+                    if (gPatt_trans[idy][idx] >= 0.0) ARLOGe(" ");
+                    ARLOGe("%.2f\t",gPatt_trans[idy][idx]);
+                  }
+                  ARLOGe("\n");
+                }
+                
+                double rot[3][3];
+                for (idy = 0; idy < 3; idy++) {
+                  for (idx = 0; idx < 3; idx++) {
+                    rot[idy][idx] = gPatt_trans[idy][idx];
+                  }
+                }
+
+                double rotx = atan2(rot[2][1],rot[2][2]);
+                double roty = atan2(-rot[2][0],sqrt(pow(rot[0][0],2)+pow(rot[1][0],2)));
+                double rotz = atan2(rot[1][0],rot[0][0]);
+                //calc: radial to grad
+                rotx = fmod(rotx/M_PI*180+360,360.0);
+                roty = fmod(roty/M_PI*180+360,360.0);
+                rotz = fmod(rotz/M_PI*180+360,360.0);
+                ARLOGe("fx: %.2f °\n",rotx);
+                ARLOGe("fy: %.2f °\n",roty);
+                ARLOGe("fz: %.2f °\n",rotz);
+            }
+
             for (j = 0; j < gARHandle->marker_num; j++) if (gARHandle->markerInfo[j].area > area) {
                 area = gARHandle->markerInfo[j].area;
                 biggestMarker = j;
             }
+            
             if (area >= AR_AREA_MIN) {
                 
                 int imageProcMode;
