@@ -85,8 +85,8 @@
 
 // Preferences.
 static int windowed = TRUE;                     // Use windowed (TRUE) or fullscreen mode (FALSE) on launch.
-static int windowWidth = 640;					// Initial window width, also updated during program execution.
-static int windowHeight = 480;                  // Initial window height, also updated during program execution.
+static int windowWidth = 1000;					// Initial window width, also updated during program execution.
+static int windowHeight = 1000;                  // Initial window height, also updated during program execution.
 static int windowDepth = 32;					// Fullscreen mode bit depth.
 static int windowRefresh = 0;					// Fullscreen mode refresh rate. Set to 0 to use default rate.
 
