@@ -61,6 +61,7 @@ lib/libEden.a
 lib/libKPM.a
 
 # Linux/OS X/Windows build products
+bin
 bin/calib_*
 bin/check_id
 bin/mk_patt
